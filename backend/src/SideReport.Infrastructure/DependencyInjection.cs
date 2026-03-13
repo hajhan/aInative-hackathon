@@ -38,9 +38,45 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-        // Services
+        // Auth Services
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        // ─── OCR 서비스 (환경변수로 Mock/Real 전환) ────────────────────────────
+        var useOcrMock = configuration.GetValue<bool>("Ocr:UseMock", defaultValue: true);
+        if (useOcrMock)
+        {
+            services.AddScoped<IOcrService, MockOcrService>();
+        }
+        else
+        {
+            services.AddHttpClient<GoogleVisionOcrService>();
+            services.AddScoped<IOcrService, GoogleVisionOcrService>();
+        }
+
+        // ─── 이미지 저장 서비스 ────────────────────────────────────────────────
+        services.AddScoped<IImageStorageService, LocalImageStorageService>();
+
+        // ─── 약품 파서 서비스 ──────────────────────────────────────────────────
+        services.AddScoped<IDrugParserService, DrugTextParserService>();
+
+        // ─── 약품 정보 서비스 (환경변수로 Mock/Real 전환) ──────────────────────
+        var useDrugInfoMock = configuration.GetValue<bool>("DrugInfo:UseMock", defaultValue: true);
+        if (useDrugInfoMock)
+        {
+            services.AddScoped<IDrugInfoService, MockDrugInfoService>();
+        }
+        else
+        {
+            services.AddHttpClient<MfdsDrugInfoService>();
+            services.AddScoped<IDrugInfoService, MfdsDrugInfoService>();
+        }
+
+        // ─── OCR 파이프라인 오케스트레이터 ────────────────────────────────────
+        services.AddScoped<IOcrPipelineService, OcrPipelineService>();
+
+        // 메모리 캐시 (약품 정보 캐싱 등)
+        services.AddMemoryCache();
 
         return services;
     }

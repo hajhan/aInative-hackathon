@@ -20,6 +20,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ReportSymptom> ReportSymptoms => Set<ReportSymptom>();
     public DbSet<ReportMedication> ReportMedications => Set<ReportMedication>();
     public DbSet<OcrImage> OcrImages => Set<OcrImage>();
+    public DbSet<KnownSideEffect> KnownSideEffects => Set<KnownSideEffect>();
+    public DbSet<DrugCache> DrugCaches => Set<DrugCache>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -183,6 +185,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(oi => oi.StorageUrl)
                   .IsRequired();
 
+            entity.Property(oi => oi.Status)
+                  .IsRequired()
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .HasDefaultValue(OcrStatus.Pending);
+
             entity.Property(oi => oi.DeleteAfterProcessing)
                   .IsRequired()
                   .HasDefaultValue(true);
@@ -191,10 +199,65 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .IsRequired()
                   .HasDefaultValueSql("NOW()");
 
+            entity.HasIndex(oi => oi.UserId)
+                  .HasDatabaseName("idx_ocr_images_user_id");
+
             entity.HasOne<ApplicationUser>()
                   .WithMany(u => u.OcrImages)
                   .HasForeignKey(oi => oi.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── KnownSideEffect ──────────────────────────────────────────────────
+        builder.Entity<KnownSideEffect>(entity =>
+        {
+            entity.HasKey(k => k.Id);
+
+            entity.Property(k => k.DrugName)
+                  .IsRequired()
+                  .HasMaxLength(200);
+
+            entity.Property(k => k.SymptomName)
+                  .IsRequired()
+                  .HasMaxLength(200);
+
+            entity.Property(k => k.Source)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasDefaultValue("KAERS");
+
+            entity.Property(k => k.CreatedAt)
+                  .IsRequired()
+                  .HasDefaultValueSql("NOW()");
+
+            entity.HasIndex(k => k.DrugName)
+                  .HasDatabaseName("idx_known_side_effects_drug_name");
+        });
+
+        // ─── DrugCache ────────────────────────────────────────────────────────
+        builder.Entity<DrugCache>(entity =>
+        {
+            entity.HasKey(dc => dc.Id);
+
+            entity.Property(dc => dc.DrugName)
+                  .IsRequired()
+                  .HasMaxLength(200);
+
+            entity.Property(dc => dc.OfficialName)
+                  .IsRequired()
+                  .HasMaxLength(300);
+
+            entity.Property(dc => dc.ApiSource)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasDefaultValue("mfds");
+
+            entity.Property(dc => dc.CachedAt)
+                  .IsRequired()
+                  .HasDefaultValueSql("NOW()");
+
+            entity.HasIndex(dc => new { dc.DrugName, dc.ExpiresAt })
+                  .HasDatabaseName("idx_drug_caches_drug_name_expires");
         });
     }
 }
