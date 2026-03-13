@@ -1,0 +1,37 @@
+version: "3.9"
+
+# 프로덕션용 Docker Compose 오버라이드
+# 사용법: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+networks:
+  sidereport-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+services:
+  db:
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  backend:
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES}
+      Jwt__RefreshTokenExpiryDays: ${REFRESH_TOKEN_EXPIRY_DAYS}
+    # 프로덕션에서는 Swagger UI 비활성화됨 (ASPNETCORE_ENVIRONMENT=Production)
+
+  frontend:
+    restart: always
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}

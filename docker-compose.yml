@@ -1,0 +1,78 @@
+version: "3.9"
+
+networks:
+  sidereport-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+services:
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sidereport-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sidereport}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-sidereport_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - sidereport-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sidereport} -d ${POSTGRES_DB:-sidereport_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─── ASP.NET Core Backend ───────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sidereport-backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-sidereport_db};Username=${POSTGRES_USER:-sidereport};Password=${POSTGRES_PASSWORD:-changeme_strong_password}"
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-CHANGE_ME_at_least_32_chars_long_secret_key_here!}
+      Jwt__Issuer: ${JWT_ISSUER:-SideReport}
+      Jwt__Audience: ${JWT_AUDIENCE:-SideReportUsers}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-15}
+      Jwt__RefreshTokenExpiryDays: ${REFRESH_TOKEN_EXPIRY_DAYS:-7}
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sidereport-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Next.js Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sidereport-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:5000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - sidereport-net
