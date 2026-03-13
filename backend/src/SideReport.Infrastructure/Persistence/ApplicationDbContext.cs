@@ -6,6 +6,7 @@ using SideReport.Infrastructure.Identity;
 
 namespace SideReport.Infrastructure.Persistence;
 
+
 /// <summary>
 /// EF Core DbContext — Identity 기반 확장
 /// </summary>

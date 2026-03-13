@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // 인증이 필요한 경로 패턴
-const protectedPaths = ["/home", "/medications", "/reports", "/history"];
+const protectedPaths = ["/home", "/medications", "/reports", "/history", "/ocr"];
 
 // 인증된 사용자가 접근하면 안 되는 경로
 const authPaths = ["/login", "/register"];

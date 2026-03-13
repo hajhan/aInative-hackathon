@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
 export default function HomePage() {
@@ -26,7 +27,7 @@ export default function HomePage() {
               새로운 부작용 증상을 기록하고 보고하세요.
             </p>
             <button className="btn-primary" disabled>
-              보고하기 (Sprint 2에서 구현)
+              보고하기 (Sprint 3에서 구현)
             </button>
           </div>
 
@@ -36,7 +37,7 @@ export default function HomePage() {
               현재 복용 중인 약물을 관리하세요.
             </p>
             <button className="btn-secondary" disabled>
-              약물 추가 (Sprint 2에서 구현)
+              약물 목록 (Sprint 3에서 구현)
             </button>
           </div>
 
@@ -45,9 +46,11 @@ export default function HomePage() {
             <p className="text-sm text-gray-600 mb-4">
               약봉투 사진을 찍어 약물 정보를 자동 입력하세요.
             </p>
-            <button className="btn-secondary" disabled>
-              사진 촬영 (Sprint 2에서 구현)
-            </button>
+            <Link href="/ocr">
+              <button className="btn-secondary w-full">
+                📷 사진 촬영 / 갤러리 선택
+              </button>
+            </Link>
           </div>
         </div>
       </div>

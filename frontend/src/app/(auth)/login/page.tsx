@@ -59,6 +59,9 @@ export default function LoginPage() {
         accessToken
       );
 
+      // 미들웨어 인증 플래그 쿠키 설정
+      document.cookie = "sr_auth_flag=1; path=/";
+
       router.push("/home");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
