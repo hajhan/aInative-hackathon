@@ -24,7 +24,7 @@ export function BottomNav() {
       <div className="max-w-md mx-auto">
         <ul className="flex items-stretch">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <li key={item.href} className="flex-1">
                 <Link

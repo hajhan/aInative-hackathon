@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOcrStore } from "@/store/ocrStore";
 import OcrResultCard from "@/components/ocr/OcrResultCard";
 import DrugEditModal from "@/components/ocr/DrugEditModal";
 import ManualDrugForm from "@/components/ocr/ManualDrugForm";
-import apiClient from "@/lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 import type { ParsedDrugItem } from "@/lib/types/ocr";
 
 export default function OcrResultPage() {
@@ -16,10 +16,12 @@ export default function OcrResultPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  if (!result) {
-    router.replace("/ocr");
-    return null;
-  }
+  // 렌더 단계가 아닌 effect에서 리다이렉트 처리 (React 18 Strict Mode 대응)
+  useEffect(() => {
+    if (!result) router.replace("/ocr");
+  }, [result, router]);
+
+  if (!result) return null;
 
   const handleSave = async () => {
     if (result.drugs.length === 0) {
@@ -58,7 +60,7 @@ export default function OcrResultPage() {
           <div className="space-y-3 mb-6">
             {result.drugs.map((drug, i) => (
               <OcrResultCard
-                key={i}
+                key={`${drug.drugName}-${i}`}
                 drug={drug}
                 index={i}
                 onEdit={() => setEditingIndex(i)}

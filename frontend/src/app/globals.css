@@ -11,6 +11,7 @@
 
   body {
     @apply text-gray-900 bg-gray-50;
+    font-family: var(--font-sans), "Noto Sans KR", sans-serif;
     font-size: 1rem; /* 16px */
     line-height: 1.6;
   }
@@ -29,6 +30,17 @@
 }
 
 @layer components {
+  .brand-logo {
+    font-family: var(--font-serif), "Noto Serif KR", Georgia, serif;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #0369a1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+
+
   .btn-primary {
     @apply w-full bg-primary-600 text-white font-semibold py-3 px-4 rounded-xl
            text-base min-h-touch transition-colors duration-200

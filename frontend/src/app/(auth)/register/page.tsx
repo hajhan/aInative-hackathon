@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiClient } from "@/lib/apiClient";
+import { BrandLogo } from "@/components/auth/BrandLogo";
 
 // 유효성 검사 스키마
 const registerSchema = z
@@ -66,11 +67,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-12">
       <div className="w-full max-w-sm mx-auto">
-        {/* 로고 & 타이틀 */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600">사이드리포트</h1>
-          <p className="mt-2 text-base text-gray-600">약물 부작용 보고 서비스</p>
-        </div>
+        <BrandLogo />
 
         {/* 회원가입 폼 */}
         <div className="card">

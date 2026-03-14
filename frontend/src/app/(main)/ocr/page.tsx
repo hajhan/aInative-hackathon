@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import apiClient from "@/lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 import { useOcrStore } from "@/store/ocrStore";
 import ImageUploader from "@/components/ocr/ImageUploader";
 import ProcessingSpinner from "@/components/ocr/ProcessingSpinner";

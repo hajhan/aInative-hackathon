@@ -126,7 +126,8 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError);
       handleLogout();
-      return Promise.reject(refreshError);
+      // 호출자에게 원본 에러(401)를 반환 (refreshError 대신)
+      return Promise.reject(error);
     } finally {
       isRefreshing = false;
     }
@@ -136,7 +137,10 @@ apiClient.interceptors.response.use(
 function handleLogout() {
   clearTokens();
   logoutUser?.();
+  // Authorization 기본 헤더 초기화
+  delete apiClient.defaults.headers.common.Authorization;
   if (typeof window !== "undefined") {
+    document.cookie = "sr_auth_flag=; path=/; max-age=0";
     window.location.href = "/login";
   }
 }

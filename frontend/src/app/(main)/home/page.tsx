@@ -15,36 +15,36 @@ export default function HomePage() {
             안녕하세요{user?.name ? `, ${user.name}님` : ""}!
           </h1>
           <p className="mt-1 text-base text-gray-600">
-            오늘 복용하신 약물의 부작용을 기록해 보세요.
+            증상을 기록하면 AI가 원인 약물을 분석해 드려요.
           </p>
         </div>
 
         {/* 빠른 실행 카드 */}
         <div className="space-y-4">
           <div className="card">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">부작용 보고</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">증상 기록 · AI 분석</h2>
             <p className="text-sm text-gray-600 mb-4">
-              새로운 부작용 증상을 기록하고 보고하세요.
+              증상을 입력하면 AI가 원인 약물을 찾아 의사·약사와 공유해요.
             </p>
             <button className="btn-primary" disabled>
-              보고하기 (Sprint 3에서 구현)
+              준비 중
             </button>
           </div>
 
           <div className="card">
             <h2 className="text-lg font-bold text-gray-900 mb-2">복용약 관리</h2>
             <p className="text-sm text-gray-600 mb-4">
-              현재 복용 중인 약물을 관리하세요.
+              복용 중인 약을 등록하면 AI 분석 정확도가 높아져요.
             </p>
             <button className="btn-secondary" disabled>
-              약물 목록 (Sprint 3에서 구현)
+              준비 중
             </button>
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">OCR 약봉투 인식</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">약봉투 스캔</h2>
             <p className="text-sm text-gray-600 mb-4">
-              약봉투 사진을 찍어 약물 정보를 자동 입력하세요.
+              약봉투를 찍으면 복용약을 자동으로 인식하고 등록해요.
             </p>
             <Link href="/ocr">
               <button className="btn-secondary w-full">
