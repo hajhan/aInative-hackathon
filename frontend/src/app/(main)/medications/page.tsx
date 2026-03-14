@@ -13,11 +13,14 @@ export default function MedicationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 로컬 날짜를 YYYY-MM-DD 형식으로 반환 (타임존 오차 방지)
+  const todayLocal = () => new Date().toLocaleDateString("en-CA");
+
   const [form, setForm] = useState<CreateMedicationRequest>({
     drugName: "",
     dosage: "",
     frequency: "",
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate: todayLocal(),
     endDate: "",
   });
 
@@ -27,7 +30,7 @@ export default function MedicationsPage() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ drugName: "", dosage: "", frequency: "", startDate: new Date().toISOString().slice(0, 10), endDate: "" });
+    setForm({ drugName: "", dosage: "", frequency: "", startDate: todayLocal(), endDate: "" });
     setShowForm(true);
     setError(null);
   };
@@ -48,6 +51,10 @@ export default function MedicationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.drugName.trim()) { setError("약품명을 입력해 주세요."); return; }
+    if (form.endDate && form.endDate < form.startDate) {
+      setError("종료일은 시작일 이후여야 합니다.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {

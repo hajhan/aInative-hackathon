@@ -141,8 +141,9 @@ public class ReportService : IReportService
         ar.Notes,
         ar.ReportSymptoms.Select(rs => new SymptomResult(rs.Id, rs.SymptomName, rs.IsOfficial)).ToList(),
         ar.ReportMedications
-            .Where(rm => medDict.ContainsKey(rm.MedicationId))
-            .Select(rm => new ReportMedicationResult(rm.MedicationId, medDict[rm.MedicationId].DrugName))
+            .Select(rm => new ReportMedicationResult(
+                rm.MedicationId,
+                medDict.TryGetValue(rm.MedicationId, out var med) ? med.DrugName : "(삭제된 약물)"))
             .ToList()
     );
 }

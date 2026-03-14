@@ -15,13 +15,13 @@ namespace SideReport.Api.Controllers;
 [Authorize]
 public class AiController : ControllerBase
 {
-    private readonly IAiAnalysisService? _aiService;
+    private readonly IAiAnalysisService _aiService;
     private readonly ILogger<AiController> _logger;
 
-    public AiController(ILogger<AiController> logger, IAiAnalysisService? aiService = null)
+    public AiController(IAiAnalysisService aiService, ILogger<AiController> logger)
     {
-        _logger = logger;
         _aiService = aiService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -32,12 +32,6 @@ public class AiController : ControllerBase
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Analyze([FromBody] AnalyzeRequest req, CancellationToken ct)
     {
-        if (_aiService is null)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { message = "AI 분석 서비스가 설정되지 않았습니다. ANTHROPIC_API_KEY를 확인하세요." });
-        }
-
         if (req.DrugNames == null || req.DrugNames.Count == 0)
             return BadRequest(new { message = "약품명을 하나 이상 입력해야 합니다." });
 
@@ -49,8 +43,17 @@ public class AiController : ControllerBase
 
         _logger.LogInformation("AI 분석 요청 (UserId: {UserId}, 약품: {Drugs})", userId, string.Join(", ", req.DrugNames));
 
-        var result = await _aiService.AnalyzeAsync(req.DrugNames, req.Symptoms, ct);
-        return Ok(result);
+        try
+        {
+            var result = await _aiService.AnalyzeAsync(req.DrugNames, req.Symptoms, ct);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "AI 분석 서비스 사용 불가");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { message = ex.Message });
+        }
     }
 }
 

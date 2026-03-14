@@ -31,7 +31,11 @@ export const useReportStore = create<ReportState>((set, get) => ({
 
   createReport: async (req) => {
     const res = await apiClient.post<ReportResult>("/api/reports", req);
-    set((state) => ({ reports: [res.data, ...state.reports] }));
+    set((state) => ({
+      reports: [res.data, ...state.reports].sort(
+        (a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime()
+      ),
+    }));
     return res.data;
   },
 
