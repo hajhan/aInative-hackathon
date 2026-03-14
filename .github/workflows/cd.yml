@@ -46,6 +46,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Koyeb 재배포 트리거
+        if: ${{ secrets.KOYEB_API_TOKEN != '' && secrets.KOYEB_BACKEND_SERVICE_ID != '' }}
         env:
           KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
           KOYEB_SERVICE_ID: ${{ secrets.KOYEB_BACKEND_SERVICE_ID }}
