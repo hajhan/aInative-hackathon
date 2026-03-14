@@ -75,6 +75,18 @@ public static class DependencyInjection
         // ─── OCR 파이프라인 오케스트레이터 ────────────────────────────────────
         services.AddScoped<IOcrPipelineService, OcrPipelineService>();
 
+        // ─── 복용약 서비스 ─────────────────────────────────────────────────────
+        services.AddScoped<IMedicationService, MedicationService>();
+
+        // ─── 부작용 보고 서비스 ────────────────────────────────────────────────
+        services.AddScoped<IReportService, ReportService>();
+
+        // ─── AI 분석 서비스 (ANTHROPIC_API_KEY 있을 때만 등록) ─────────────────
+        if (!string.IsNullOrEmpty(configuration["ANTHROPIC_API_KEY"]))
+        {
+            services.AddScoped<IAiAnalysisService, ClaudeAiAnalysisService>();
+        }
+
         // 메모리 캐시 (약품 정보 캐싱 등)
         services.AddMemoryCache();
 

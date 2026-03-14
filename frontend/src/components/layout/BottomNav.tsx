@@ -12,8 +12,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/home", label: "홈", icon: "🏠" },
   { href: "/medications", label: "복용약", icon: "💊" },
-  { href: "/reports/new", label: "보고", icon: "📋" },
-  { href: "/history", label: "이력", icon: "📅" },
+  { href: "/report", label: "보고", icon: "📋" },
+  { href: "/reports", label: "이력", icon: "📅" },
 ];
 
 export function BottomNav() {
