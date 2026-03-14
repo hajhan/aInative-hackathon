@@ -59,9 +59,12 @@ public class GoogleVisionOcrService : IOcrService
 
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var url = $"{VisionApiUrl}?key={_apiKey}";
 
-            var response = await _httpClient.PostAsync(url, content);
+            using var request = new HttpRequestMessage(HttpMethod.Post, VisionApiUrl);
+            request.Content = content;
+            request.Headers.Add("x-goog-api-key", _apiKey);
+
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var responseJson = await response.Content.ReadAsStringAsync();

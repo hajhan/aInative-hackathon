@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SideReport.Application.Interfaces;
 using SideReport.Application.Ocr.Commands;
 using SideReport.Application.Ocr.Results;
+using SideReport.Domain.Exceptions;
 
 namespace SideReport.Api.Controllers;
 
@@ -52,7 +53,7 @@ public class OcrController : ControllerBase
             return BadRequest(new { message = "이미지 크기는 10MB 이하여야 합니다." });
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? throw new UnauthorizedAccessException("사용자 인증 정보를 찾을 수 없습니다.");
+            ?? throw new UnauthorizedException("사용자 인증 정보를 찾을 수 없습니다.");
 
         var command = new UploadOcrImageCommand
         {
@@ -78,7 +79,7 @@ public class OcrController : ControllerBase
     public async Task<IActionResult> GetResult(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? throw new UnauthorizedAccessException("사용자 인증 정보를 찾을 수 없습니다.");
+            ?? throw new UnauthorizedException("사용자 인증 정보를 찾을 수 없습니다.");
 
         var result = await _pipeline.GetResultAsync(id, userId);
         if (result == null)
@@ -101,7 +102,7 @@ public class OcrController : ControllerBase
             return BadRequest(new { message = "저장할 약품 목록이 없습니다." });
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? throw new UnauthorizedAccessException("사용자 인증 정보를 찾을 수 없습니다.");
+            ?? throw new UnauthorizedException("사용자 인증 정보를 찾을 수 없습니다.");
 
         await _pipeline.ConfirmMedicationsAsync(id, userId, drugs);
         return NoContent();

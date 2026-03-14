@@ -69,11 +69,13 @@ public class JwtTokenService : IJwtTokenService
     {
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false,
-            ValidateIssuer = false,
+            ValidateAudience = true,
+            ValidAudience = _audience,
+            ValidateIssuer = true,
+            ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey)),
-            ValidateLifetime = false  // 만료된 토큰도 허용
+            ValidateLifetime = false  // 만료된 토큰도 허용 (갱신 시 사용)
         };
 
         try
