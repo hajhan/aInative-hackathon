@@ -1,0 +1,30 @@
+name: CD — Railway 자동 배포
+
+on:
+  push:
+    branches: [sprint1]
+
+jobs:
+  # CI가 통과한 후에만 배포
+  deploy-backend:
+    name: Backend 배포 (Railway)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Railway Backend 배포 트리거
+        run: |
+          curl -s -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_BACKEND }}" \
+            -o /dev/null -w "HTTP %{http_code}\n"
+
+  deploy-frontend:
+    name: Frontend 배포 (Railway)
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-backend
+
+    steps:
+      - name: Railway Frontend 배포 트리거
+        run: |
+          curl -s -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_FRONTEND }}" \
+            -o /dev/null -w "HTTP %{http_code}\n"

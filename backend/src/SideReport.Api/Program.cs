@@ -102,11 +102,18 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration["NEXT_PUBLIC_API_BASE_URL"] ?? "http://localhost:3000",
-                "http://localhost:3000",
-                "http://localhost:3100"
-            )
+        // CORS_ORIGINS 환경 변수로 추가 도메인 주입 가능 (쉼표 구분)
+        // 예: https://sidereport.vercel.app,https://sidereport-frontend.up.railway.app
+        var extraOrigins = (builder.Configuration["CORS_ORIGINS"] ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var origins = new[]
+        {
+            "http://localhost:3000",
+            "http://localhost:3100"
+        }.Concat(extraOrigins).Distinct().ToArray();
+
+        policy.WithOrigins(origins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
