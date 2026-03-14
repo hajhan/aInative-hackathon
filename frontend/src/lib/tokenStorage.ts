@@ -12,13 +12,10 @@ const REFRESH_TOKEN_KEY = "sr_rt";
  * Access Token과 Refresh Token을 함께 저장
  * - accessToken은 Zustand store에서 별도 관리 (여기서는 refresh만 저장)
  */
-export function saveTokens(accessToken: string, refreshToken: string): void {
+export function saveTokens(_accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
-  // Access Token은 메모리(Zustand)에서 관리하므로 여기서는 저장하지 않음
-  // refreshToken만 sessionStorage에 저장
+  // _accessToken은 Zustand store에서 관리 (login() 호출 시 처리됨)
   sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  // accessToken 파라미터는 Zustand store에 login() 호출 시 처리됨
-  void accessToken; // suppress unused warning
 }
 
 /**

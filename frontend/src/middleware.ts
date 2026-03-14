@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // 인증이 필요한 경로 패턴
-const protectedPaths = ["/home", "/medications", "/reports", "/history"];
+const protectedPaths = ["/home", "/medications", "/reports", "/history", "/ocr"];
 
 // 인증된 사용자가 접근하면 안 되는 경로
 const authPaths = ["/login", "/register"];
@@ -10,8 +10,8 @@ const authPaths = ["/login", "/register"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // sessionStorage는 서버 측 미들웨어에서 접근 불가
-  // 쿠키 기반 인증 플래그 확인 (httpOnly가 아닌 일반 쿠키)
+  // Edge Runtime에서 sessionStorage 접근 불가 → UX용 쿠키 힌트 사용
+  // 보안 게이트는 API 서버의 JWT 검증이 담당 (이 쿠키는 빠른 리다이렉트 UX 전용)
   const authCookie = request.cookies.get("sr_auth_flag");
   const isAuthenticated = !!authCookie?.value;
 

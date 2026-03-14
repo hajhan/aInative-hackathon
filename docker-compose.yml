@@ -6,6 +6,7 @@ networks:
 
 volumes:
   pgdata:
+  ocr_uploads:
 
 services:
   # ─── PostgreSQL ─────────────────────────────────────────────────────────────
@@ -46,6 +47,12 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-SideReportUsers}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-15}
       Jwt__RefreshTokenExpiryDays: ${REFRESH_TOKEN_EXPIRY_DAYS:-7}
+      Ocr__UseMock: ${OCR_USE_MOCK:-true}
+      GoogleVision__ApiKey: ${GOOGLE_VISION_API_KEY:-}
+      DrugInfo__UseMock: ${DRUG_INFO_USE_MOCK:-true}
+      Mfds__ApiKey: ${MFDS_API_KEY:-}
+    volumes:
+      - ocr_uploads:/app/wwwroot/uploads/ocr
     ports:
       - "5000:5000"
     depends_on:

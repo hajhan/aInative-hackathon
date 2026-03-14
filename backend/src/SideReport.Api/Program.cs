@@ -1,9 +1,11 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SideReport.Api.Middleware;
+using SideReport.Domain.Entities;
 using SideReport.Infrastructure;
 using SideReport.Infrastructure.Persistence;
 
@@ -39,6 +41,16 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// ─── 요청 크기 제한 증가 (이미지 업로드 — 최대 10MB) ─────────────────────────
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10MB
+});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB
+});
 
 // ─── Controllers & Swagger ────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -92,7 +104,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 builder.Configuration["NEXT_PUBLIC_API_BASE_URL"] ?? "http://localhost:3000",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://localhost:3100"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -106,16 +119,21 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         db.Database.Migrate();
+        startupLogger.LogInformation("DB 마이그레이션 완료");
+        await SeedKaersDataAsync(db, app.Environment, startupLogger);
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "DB 마이그레이션 중 오류가 발생했습니다.");
+        startupLogger.LogError(ex, "DB 마이그레이션 중 오류가 발생했습니다.");
     }
 }
+
+// ─── 정적 파일 (업로드 이미지 서빙) ──────────────────────────────────────────
+app.UseStaticFiles();
 
 // ─── Middleware Pipeline ──────────────────────────────────────────────────────
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
@@ -137,5 +155,55 @@ app.MapControllers();
 
 app.Run();
 
+// ─── KAERS 시드 헬퍼 ─────────────────────────────────────────────────────────
+static async Task SeedKaersDataAsync(ApplicationDbContext db, IWebHostEnvironment env, ILogger logger)
+{
+    if (await db.KnownSideEffects.AnyAsync())
+        return;
+
+    // 시드 파일 탐색 (로컬 개발, Docker 환경 모두 지원)
+    var searchPaths = new[]
+    {
+        Path.Combine(env.ContentRootPath, "..", "..", "data", "kaers-seed.json"),
+        Path.Combine(AppContext.BaseDirectory, "data", "kaers-seed.json"),
+        Path.Combine(env.ContentRootPath, "data", "kaers-seed.json")
+    };
+
+    var seedPath = searchPaths.FirstOrDefault(File.Exists);
+    if (seedPath == null)
+    {
+        logger.LogWarning("KAERS 시드 파일을 찾을 수 없습니다.");
+        return;
+    }
+
+    try
+    {
+        var json = await File.ReadAllTextAsync(seedPath);
+        var items = JsonSerializer.Deserialize<List<KaersSeedItem>>(json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (items == null || items.Count == 0) return;
+
+        var entities = items.Select(i => new KnownSideEffect
+        {
+            DrugName = i.DrugName,
+            SymptomName = i.SymptomName,
+            FrequencyRank = i.FrequencyRank,
+            Source = i.Source ?? "KAERS"
+        }).ToList();
+
+        db.KnownSideEffects.AddRange(entities);
+        await db.SaveChangesAsync();
+        logger.LogInformation("KAERS 시드 데이터 {Count}건 적재 완료", entities.Count);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "KAERS 시드 데이터 적재 중 오류");
+    }
+}
+
 // Make Program accessible for integration tests
 public partial class Program { }
+
+/// <summary>KAERS JSON 시드 항목</summary>
+internal record KaersSeedItem(string DrugName, string SymptomName, int FrequencyRank, string? Source);
