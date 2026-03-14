@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMedicationStore } from "@/store/medicationStore";
 import { useReportStore } from "@/store/reportStore";
@@ -123,9 +124,9 @@ export default function ReportPage() {
           {medications.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 mb-3">등록된 복용약이 없습니다.</p>
-              <a href="/medications" className="text-blue-600 text-sm underline">
+              <Link href="/medications" className="text-blue-600 text-sm underline">
                 복용약 먼저 등록하기
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="space-y-2 mb-6">

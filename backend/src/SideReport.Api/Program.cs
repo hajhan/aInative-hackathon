@@ -110,6 +110,7 @@ builder.Services.AddCors(options =>
         var origins = new[]
         {
             "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:3100"
         }.Concat(extraOrigins).Distinct().ToArray();
 
