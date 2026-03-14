@@ -67,11 +67,18 @@ export default function ReportPage() {
     if (drugNames.length === 0 || symptoms.length === 0) return;
 
     setAnalyzing(true);
+    setAiResult(null);
     try {
       const result = await analyzeWithAi(drugNames, symptoms);
       setAiResult(result);
     } catch {
-      // AI 분석 실패해도 보고서 제출은 가능
+      // 분석 실패 시 사용자에게 안내 (보고서 제출은 계속 가능)
+      setAiResult({
+        officialSideEffects: [],
+        possibleInteractions: [],
+        summary: "AI 분석을 완료할 수 없습니다.",
+        recommendation: "전문의 상담을 권장합니다.",
+      });
     } finally {
       setAnalyzing(false);
     }

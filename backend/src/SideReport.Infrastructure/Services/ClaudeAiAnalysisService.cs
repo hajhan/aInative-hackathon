@@ -54,10 +54,16 @@ public class ClaudeAiAnalysisService : IAiAnalysisService
 
             return ParseResponse(text);
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Claude AI 분석 요청이 취소되었습니다.");
+            throw;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Claude AI 분석 중 오류 발생");
-            return new AiAnalysisResult([], [], "AI 분석을 완료할 수 없습니다.", "전문의 상담을 권장합니다.");
+            _logger.LogError(ex, "Claude AI 분석 중 오류 발생 (타입: {ExType})", ex.GetType().Name);
+            // 호출자가 실패 여부를 구분할 수 있도록 예외를 다시 던짐
+            throw new InvalidOperationException("AI 분석 서비스 호출에 실패했습니다.", ex);
         }
     }
 

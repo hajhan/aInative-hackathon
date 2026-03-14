@@ -27,8 +27,20 @@ public class ReportService : IReportService
             .Where(m => command.MedicationIds.Contains(m.Id) && m.UserId == userId)
             .ToListAsync(ct);
 
-        if (medications.Count != command.MedicationIds.Distinct().Count())
-            throw new ValidationException("유효하지 않은 복용약 ID가 포함되어 있습니다.");
+        // 중복 ID 검사
+        var duplicateIds = command.MedicationIds
+            .GroupBy(id => id)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+        if (duplicateIds.Count > 0)
+            throw new ValidationException($"중복된 복용약 ID가 포함되어 있습니다: {string.Join(", ", duplicateIds)}");
+
+        // 존재하지 않거나 다른 사용자 소유 ID 검사
+        var foundIds = medications.Select(m => m.Id).ToHashSet();
+        var invalidIds = command.MedicationIds.Where(id => !foundIds.Contains(id)).ToList();
+        if (invalidIds.Count > 0)
+            throw new ValidationException($"존재하지 않는 복용약 ID가 포함되어 있습니다: {string.Join(", ", invalidIds)}");
 
         // KAERS 대조: 약품명-증상 조합이 공식 부작용인지 확인
         var drugNames = medications.Select(m => m.DrugName).ToList();
