@@ -1,0 +1,16 @@
+app = "sidereport-backend"
+primary_region = "nrt"  # 도쿄 (한국에서 가장 가까운 리전)
+
+[build]
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = true   # 비활성 시 자동 중지 (무료 한도 절약)
+  auto_start_machines = true  # 요청 시 자동 재시작
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
