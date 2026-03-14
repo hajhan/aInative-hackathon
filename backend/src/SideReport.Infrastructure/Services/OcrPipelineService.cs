@@ -82,16 +82,25 @@ public class OcrPipelineService : IOcrPipelineService
             // 4. 약품 텍스트 파싱
             var parsedDrugs = _parser.ParseOcrText(ocrResult.RawText);
 
-            // 5. 식약처 정보 검증 (병렬)
+            // 5. 식약처 정보 검증 (동시 요청 3개 제한)
+            using var semaphore = new SemaphoreSlim(3, 3);
             var verifyTasks = parsedDrugs.Select(async drug =>
             {
-                var info = await _drugInfo.LookupDrugAsync(drug.DrugName);
-                if (info != null)
+                await semaphore.WaitAsync();
+                try
                 {
-                    drug.OfficialName = info.OfficialName;
-                    drug.IsVerified = true;
+                    var info = await _drugInfo.LookupDrugAsync(drug.DrugName);
+                    if (info != null)
+                    {
+                        drug.OfficialName = info.OfficialName;
+                        drug.IsVerified = true;
+                    }
+                    return drug;
                 }
-                return drug;
+                finally
+                {
+                    semaphore.Release();
+                }
             });
             var verifiedDrugs = (await Task.WhenAll(verifyTasks)).ToList();
 
@@ -134,6 +143,17 @@ public class OcrPipelineService : IOcrPipelineService
             _logger.LogError(ex, "OCR 파이프라인 처리 중 오류 (OcrImageId: {Id})", ocrImage.Id);
             ocrImage.Status = OcrStatus.Failed;
             await _db.SaveChangesAsync();
+
+            // 실패 시에도 DeleteAfterProcessing 옵션에 따라 이미지 정리
+            if (command.DeleteAfterProcessing && storagePath != null)
+            {
+                try { await _storage.DeleteAsync(storagePath); }
+                catch (Exception delEx)
+                {
+                    _logger.LogWarning(delEx, "실패 후 이미지 삭제 중 오류 (StoragePath: {Path})", storagePath);
+                }
+            }
+
             return new OcrUploadResult { Id = ocrImage.Id, Status = OcrStatus.Failed };
         }
     }

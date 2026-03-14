@@ -72,7 +72,8 @@ export default function LoginPage() {
       );
 
       // 미들웨어 UX 힌트 쿠키 설정 (보안 게이트가 아닌 빠른 리다이렉트용)
-      document.cookie = "sr_auth_flag=1; path=/";
+      const isHttps = location.protocol === "https:";
+      document.cookie = `sr_auth_flag=1; path=/; SameSite=Strict${isHttps ? "; Secure" : ""}`;
 
       router.push("/home");
     } catch (error: unknown) {

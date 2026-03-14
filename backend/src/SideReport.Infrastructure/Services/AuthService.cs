@@ -114,10 +114,11 @@ public class AuthService : IAuthService
         if (tokenUser is null)
             throw new UnauthorizedException("사용자를 찾을 수 없습니다.");
 
-        // 기존 토큰 폐기
+        // 기존 토큰 폐기 + 새 토큰 발급을 트랜잭션으로 묶어 부분 실패 방지
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
         storedToken.IsRevoked = true;
 
-        // 새 토큰 발급
         var newAccessToken = _jwtTokenService.GenerateAccessToken(tokenUser.Id, tokenUser.Email ?? string.Empty, tokenUser.Name);
         var newRefreshTokenValue = _jwtTokenService.GenerateRefreshToken();
 
@@ -130,6 +131,7 @@ public class AuthService : IAuthService
         };
         _dbContext.RefreshTokens.Add(newRefreshToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new RefreshTokenResult
         {
