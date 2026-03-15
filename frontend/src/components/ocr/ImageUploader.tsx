@@ -10,6 +10,7 @@ interface Props {
 export default function ImageUploader({ onImageSelected, disabled }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const previewRef = useRef<string | null>(null); // cleanup용 최신 preview 추적
   const [preview, setPreview] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -19,17 +20,19 @@ export default function ImageUploader({ onImageSelected, disabled }: Props) {
     if (!file.type.startsWith("image/")) return;
     setPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev); // 이전 URL 해제
-      return URL.createObjectURL(file);
+      const next = URL.createObjectURL(file);
+      previewRef.current = next;
+      return next;
     });
     onImageSelected(file);
   }, [onImageSelected]);
 
-  // 컴포넌트 언마운트 시 Object URL 정리
+  // 컴포넌트 언마운트 시 Object URL 정리 (ref로 최신값 참조 — deps 배열 변경으로 인한 조기 해제 방지)
   useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview);
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     };
-  }, [preview]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,6 +65,13 @@ export default function ImageUploader({ onImageSelected, disabled }: Props) {
     if (stream && videoRef.current) {
       videoRef.current.srcObject = stream;
     }
+  }, [stream]);
+
+  // 카메라 페이지 이탈 시 스트림 정리
+  useEffect(() => {
+    return () => {
+      stream?.getTracks().forEach((t) => t.stop());
+    };
   }, [stream]);
 
   // 카메라 스트림 종료

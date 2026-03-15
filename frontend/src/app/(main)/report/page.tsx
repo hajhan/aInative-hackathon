@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMedicationStore } from "@/store/medicationStore";
 import { useReportStore } from "@/store/reportStore";
+import { useOcrStore } from "@/store/ocrStore";
 import { Severity, AiAnalysisResult } from "@/lib/types/report";
 
 type Step = 1 | 2 | 3 | 4;
@@ -24,6 +25,7 @@ export default function ReportPage() {
   const router = useRouter();
   const { medications, fetchMedications } = useMedicationStore();
   const { createReport, analyzeWithAi } = useReportStore();
+  const { setReturnPath } = useOcrStore();
 
   const [step, setStep] = useState<Step>(1);
   const [selectedMedIds, setSelectedMedIds] = useState<string[]>([]);
@@ -36,8 +38,15 @@ export default function ReportPage() {
   const [aiResult, setAiResult] = useState<AiAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
+  // 페이지 포커스 시 복용약 재조회 (OCR 후 돌아왔을 때 갱신)
   useEffect(() => {
     fetchMedications();
+  }, [fetchMedications]);
+
+  useEffect(() => {
+    const onFocus = () => fetchMedications();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [fetchMedications]);
 
   const toggleMed = (id: string) => {
@@ -127,6 +136,15 @@ export default function ReportPage() {
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-1">복용 중인 약 선택</h2>
           <p className="text-sm text-gray-600 mb-4">부작용이 의심되는 약을 선택하세요. (선택 안 해도 됩니다)</p>
+
+          <div className="mb-4">
+            <button
+              onClick={() => { setReturnPath("/report"); router.push("/ocr"); }}
+              className="btn-secondary w-full"
+            >
+              📷 약봉투로 입력하기
+            </button>
+          </div>
 
           {medications.length === 0 ? (
             <div className="text-center py-8">

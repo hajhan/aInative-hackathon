@@ -5,9 +5,11 @@ interface OcrState {
   result: OcrUploadResult | null;
   isProcessing: boolean;
   error: string | null;
+  returnPath: string; // OCR 완료 후 돌아갈 경로
   setResult: (result: OcrUploadResult) => void;
   setProcessing: (value: boolean) => void;
   setError: (msg: string | null) => void;
+  setReturnPath: (path: string) => void;
   updateDrug: (index: number, drug: ParsedDrugItem) => void;
   removeDrug: (index: number) => void;
   addDrug: (drug: ParsedDrugItem) => void;
@@ -18,10 +20,12 @@ export const useOcrStore = create<OcrState>((set) => ({
   result: null,
   isProcessing: false,
   error: null,
+  returnPath: '/home',
 
   setResult: (result) => set({ result, isProcessing: false, error: null }),
   setProcessing: (value) => set({ isProcessing: value }),
   setError: (msg) => set({ error: msg, isProcessing: false }),
+  setReturnPath: (path) => set({ returnPath: path }),
 
   updateDrug: (index, drug) =>
     set((state) => {
@@ -44,5 +48,5 @@ export const useOcrStore = create<OcrState>((set) => ({
       return { result: { ...state.result, drugs: [...state.result.drugs, drug] } };
     }),
 
-  reset: () => set({ result: null, isProcessing: false, error: null }),
+  reset: () => set({ result: null, isProcessing: false, error: null, returnPath: '/home' }),
 }));

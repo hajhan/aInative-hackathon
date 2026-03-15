@@ -11,7 +11,7 @@ import type { ParsedDrugItem } from "@/lib/types/ocr";
 
 export default function OcrResultPage() {
   const router = useRouter();
-  const { result, updateDrug, removeDrug, addDrug, reset } = useOcrStore();
+  const { result, returnPath, updateDrug, removeDrug, addDrug, reset } = useOcrStore();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -32,8 +32,9 @@ export default function OcrResultPage() {
     setSaveError(null);
     try {
       await apiClient.post(`/api/ocr/${result.id}/confirm`, result.drugs);
+      const destination = returnPath;
+      router.push(destination); // reset() 이전 호출 — reset 후 useEffect가 /ocr로 리다이렉트하는 경합 방지
       reset();
-      router.push("/home");
     } catch {
       setSaveError("저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {

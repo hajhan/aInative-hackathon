@@ -109,14 +109,16 @@ apiClient.interceptors.response.use(
     try {
       const response = await apiClient.post<{
         accessToken: string;
+        refreshToken?: string; // rotation: 서버가 새 refreshToken 발급 시 교체
         expiresIn: number;
       }>("/api/auth/refresh", { refreshToken });
 
       const newAccessToken = response.data.accessToken;
+      const newRefreshToken = response.data.refreshToken ?? refreshToken;
 
-      // 토큰 갱신
+      // 토큰 갱신 (rotation 지원: 서버가 새 refreshToken을 내려주면 교체)
       updateToken?.(newAccessToken);
-      saveTokens(newAccessToken, refreshToken);
+      saveTokens(newAccessToken, newRefreshToken);
 
       apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
       processQueue(null, newAccessToken);

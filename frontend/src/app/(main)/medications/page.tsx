@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMedicationStore } from "@/store/medicationStore";
+import { useOcrStore } from "@/store/ocrStore";
 import { MedicationResult, CreateMedicationRequest } from "@/lib/types/medication";
 
 export default function MedicationsPage() {
+  const router = useRouter();
+  const { setReturnPath } = useOcrStore();
   const { medications, loading, fetchMedications, addMedication, updateMedication, deleteMedication } =
     useMedicationStore();
 
@@ -91,8 +95,11 @@ export default function MedicationsPage() {
     <div className="px-4 py-6 max-w-md mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">내 복용약</h1>
-        <button onClick={openAdd} className="btn-primary text-sm px-4 py-2">
-          + 추가
+        <button
+          onClick={() => { setReturnPath("/medications"); router.push("/ocr"); }}
+          className="btn-primary text-sm px-4 py-2 whitespace-nowrap"
+        >
+          📷 약봉투로 입력하기
         </button>
       </div>
 
@@ -101,8 +108,11 @@ export default function MedicationsPage() {
       {!loading && medications.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-base mb-4">등록된 복용약이 없습니다.</p>
-          <button onClick={openAdd} className="btn-secondary">
-            첫 번째 약 등록하기
+          <button
+            onClick={() => { setReturnPath("/medications"); router.push("/ocr"); }}
+            className="btn-primary"
+          >
+            📷 약봉투로 입력하기
           </button>
         </div>
       )}
