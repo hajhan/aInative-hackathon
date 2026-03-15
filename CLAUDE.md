@@ -31,7 +31,14 @@ cd backend
 dotnet restore SideReport.sln
 dotnet build SideReport.sln
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/SideReport.Api
+```
 
+**Windows**에서는 동일 명령 줄에 환경 변수를 함께 지정해야 한다:
+```cmd
+set ASPNETCORE_ENVIRONMENT=Development&& dotnet run --project src/SideReport.Api
+```
+
+```bash
 # 테스트 전체
 dotnet test SideReport.sln
 
@@ -49,9 +56,9 @@ Health check: `http://localhost:5000/health`
 ```bash
 cd frontend
 npm install
-npm run dev    # http://localhost:3000 (포트 사용 중이면 3001로 자동 전환)
+npm run dev -- -p 3100   # 로컬 개발 포트: 3100
 npm run build
-npm run lint
+npm run lint             # Vercel 배포 전 필수
 ```
 
 `NEXT_PUBLIC_API_BASE_URL` 미설정 시 `http://localhost:5000`으로 폴백.
@@ -77,9 +84,10 @@ SideReport.Api           ← Controller, Middleware, Program.cs (Application+Inf
 
 **JWT 흐름**: Access Token (15분, HS256) + Refresh Token (7일, DB 저장). 갱신 시 기존 Refresh Token 폐기(rotation). Refresh Token rotation은 DB 트랜잭션으로 감싼다.
 
-**AI 분석**: `ANTHROPIC_API_KEY` 설정 시 `ClaudeAiAnalysisService` 등록, 미설정 시 `NoOpAiAnalysisService`(InvalidOperationException 던짐) 등록. `AiController`에서 `InvalidOperationException` → 503 반환.
-
-**Mock/Real 전환**: `Ocr:UseMock`, `DrugInfo:UseMock` 설정값으로 서비스 구현체 전환. 기본값은 모두 `true`(Mock).
+**조건부 서비스 등록** (`DependencyInjection.cs`):
+- `Ocr:UseMock=true` → `MockOcrService`, `false` → `GoogleVisionOcrService`
+- `DrugInfo:UseMock=true` → `MockDrugInfoService`, `false` → `MfdsDrugInfoService`
+- `ANTHROPIC_API_KEY` 설정 시 → `ClaudeAiAnalysisService`, 미설정 시 → `NoOpAiAnalysisService` (503 반환)
 
 ### 프론트엔드 — Next.js App Router
 
@@ -88,12 +96,21 @@ src/app/(auth)/          ← 비인증 라우트 (login, register)
 src/app/(main)/          ← 인증 필요 라우트 (home, ocr, report, reports, medications)
 src/lib/apiClient.ts     ← axios 인스턴스, JWT 인터셉터, 401 자동 갱신 (queue 기반)
 src/store/               ← Zustand 스토어 (auth, ocr, medication, report)
-src/middleware.ts        ← 라우트 보호 (sr_auth_flag 쿠키 기반, 보안 게이트는 API JWT)
+src/middleware.ts        ← 라우트 보호 (sr_auth_flag 쿠키 기반, UX용 힌트 — 보안 게이트는 API JWT)
+src/components/auth/AuthGuard.tsx ← 클라이언트 사이드 인증 가드 (hydration 완료 후 판단)
 ```
 
 **내비게이션**: 페이지 간 이동은 반드시 Next.js `<Link>` 사용. `<a href>` 사용 시 풀 페이지 리로드로 Zustand 스토어 초기화 → auth 상태 소실 → 자동 로그아웃 버그 발생.
 
-**날짜 처리**: `new Date().toLocaleDateString('en-CA')` 로 로컬 YYYY-MM-DD 반환 (타임존 오차 방지). `toISOString().slice(0,10)` 사용 금지.
+**`<Link>` 안에 `<button>` 중첩 금지**: HTML 시맨틱 오류. 대신 Link에 직접 버튼 스타일을 적용하거나 `useRouter`를 사용한다.
+
+**날짜 처리**: `new Date().toLocaleDateString('en-CA')`로 로컬 YYYY-MM-DD 반환 (타임존 오차 방지). `toISOString().slice(0,10)` 사용 금지.
+
+**JWT payload 디코딩**: `atob()` 단독 사용 시 한글 깨짐. `login/page.tsx`의 `decodeJwtPayload()` 헬퍼 함수(TextDecoder 기반)를 재사용한다.
+
+**OCR → 복용약 등록 흐름**: `ocrStore`의 `returnPath`에 출발 페이지를 저장하고 OCR 완료 후 복귀. `medications`/`report` 페이지에서 OCR로 이동 시 반드시 `setReturnPath`를 먼저 호출한다.
+
+**AuthGuard hydration**: `AuthGuard`는 `mounted` 상태로 hydration 완료 여부를 확인한다. 새로고침 시 Zustand는 초기값(`isAuthenticated: false`)으로 시작하므로, mounted 이전에는 스켈레톤을 렌더링한다.
 
 ### DB 스키마
 
@@ -140,7 +157,7 @@ npm run lint                        # 프론트엔드 lint (Vercel 빌드 전 �
 ## 배포
 
 - **프론트엔드**: Vercel — sprint1 push 시 자동 배포. 설정: `frontend/vercel.json`
-- **백엔드**: Fly.io (`sidereport-backend`) — GitHub Actions CD (`cd.yml`). 설정: `backend/fly.toml`
+- **백엔드**: Fly.io (`sidereport-backend`) — GitHub Actions CD (`.github/workflows/cd.yml`). 설정: `backend/fly.toml`
 - **CORS**: `Program.cs`에 허용 오리진 하드코딩 + `CORS_ORIGINS` 환경 변수로 추가 도메인 주입 가능
 
 ### Fly.io 환경 변수 설정
@@ -156,16 +173,12 @@ flyctl secrets set KEY=VALUE --app sidereport-backend
 
 ## 환경 변수 (.env)
 
-`.env.example`을 복사하여 사용. 필수 변경 항목:
-- `JWT_SECRET_KEY` — 32자 이상 랜덤 문자열
-- `POSTGRES_PASSWORD` — 강력한 패스워드
-
-로컬 개발 시 `backend/src/SideReport.Api/appsettings.Development.json`에 `ConnectionStrings.DefaultConnection` 설정 (git 미추적 권장).
+`.env.example`을 복사하여 사용. 로컬 개발 시 `backend/src/SideReport.Api/appsettings.Development.json`에 `ConnectionStrings.DefaultConnection` 설정 (git 미추적 권장).
 
 | 환경 변수 | 용도 | 기본값 |
 |-----------|------|--------|
 | `OCR_USE_MOCK` | Google Vision 대신 Mock OCR 사용 | `true` |
 | `DRUG_INFO_USE_MOCK` | 식약처 API 대신 Mock 사용 | `true` |
 | `ANTHROPIC_API_KEY` | Claude AI 분석 (미설정 시 503 반환) | 없음 |
-| `GOOGLE_VISION_API_KEY` | OCR_USE_MOCK=false 시 필요 | 없음 |
-| `MFDS_API_KEY` | 공공데이터포털 식약처 API | 없음 |
+| `GOOGLE_VISION_API_KEY` | `OCR_USE_MOCK=false` 시 필요 | 없음 |
+| `MFDS_API_KEY` | 공공데이터포털 식약처 API 키 | 없음 |
